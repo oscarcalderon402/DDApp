@@ -4,21 +4,22 @@ const s3 = require("../aws/s3");
 const config = require("config");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
+const { v4: uuidv4 } = require("uuid");
 
 const Cases = require("../models/Case");
 
 const startOfDay = require("date-fns/startOfDay");
 const endOfDay = require("date-fns/endOfDay");
 
-const { DLBUCKETNAME, BUCKETNAME } = config.get("AWS");
-
-router.post("/image", upload.single("file"), (req, res) => {
+router.post("/", upload.single("file"), (req, res) => {
   const file = req.file;
-  console.log(file);
+
   if (file) {
+    const key = uuidv4();
+    console.log(key);
     const uploadParams = {
       Bucket: config.get("AWS.BUCKETNAME"),
-      Key: file.originalname,
+      Key: key,
       Body: file.buffer,
       ContentEncoding: file.encoding,
       ContentType: file.mimetype,
@@ -27,29 +28,45 @@ router.post("/image", upload.single("file"), (req, res) => {
     s3.upload(uploadParams, (err, data) => {
       if (err) console.log(err, err.stack);
       // an error occurred
-      else console.log(data);
-    });
+      else {
+        async function sendDataToDB() {
+          try {
+            const { installment } = req.body;
+            if (!installment) {
+              res.status(500).json({ msg: "installment no valid" });
+            }
 
-    res.send("GG");
+            req.body.image = data.key;
+            const newCases = new Cases(req.body);
+            const response = await newCases.save();
+            console.log(response);
+            res.status(201).json(response);
+          } catch (error) {
+            console.log(error);
+          }
+        }
+        sendDataToDB();
+      }
+    });
   } else {
     res.send("get good");
   }
 });
 
-router.post("/", async (req, res) => {
-  try {
-    const { installment } = req.body;
-    if (!installment) {
-      res.status(500).json({ msg: "installment no valid" });
-    }
-    const newCases = new Cases(req.body);
-    const response = await newCases.save();
+// router.post("/", async (req, res) => {
+//   try {
+//     const { installment } = req.body;
+//     if (!installment) {
+//       res.status(500).json({ msg: "installment no valid" });
+//     }
+//     const newCases = new Cases(req.body);
+//     const response = await newCases.save();
 
-    res.status(201).json(response);
-  } catch (error) {
-    console.log(error);
-  }
-});
+//     res.status(201).json(response);
+//   } catch (error) {
+//     console.log(error);
+//   }
+// });
 
 router.get("/image/:imageId", (req, res) => {
   try {
@@ -76,24 +93,6 @@ router.get("/image/:imageId", (req, res) => {
         res.end(null, "binary");
       }
     });
-
-    // res.writeHead(200, {
-    //   "Content-Type": "application/png",
-    //   "Content-Disposition": `attachment; filename=${imageId}`,
-    // });
-    // s3.getObject(params)
-    //   .createReadStream()
-    //   .on("error", function (err) {
-    //     res.status(500).json({ error: "Error -> " + err });
-    //   })
-    //   .pipe(res);
-
-    // req.setTimeout(60000, function () {
-    //   // if after 60s file not downlaoded, we abort a request
-    //   req.abort();
-    // });
-
-    // res.send(imageId);
   } catch (error) {
     console.log(error);
     res.status(500).send("Internal Server Error");

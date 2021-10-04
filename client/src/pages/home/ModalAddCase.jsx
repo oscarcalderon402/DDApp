@@ -65,7 +65,7 @@ const ModalAddCase = () => {
         })
       )
     );
-    // const newFile = { ...acceptedFiles[0] };
+    // const newFile = { ...acceptedFiles[0], name: };
 
     // console.log(acceptedFiles[0]);
     // console.log(newFile);

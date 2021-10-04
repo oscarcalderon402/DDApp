@@ -107,34 +107,42 @@ export const GlobalProvider = ({ children }) => {
   //functions
   async function addCase(data, file) {
     try {
-      let dataAxios = JSON.stringify(data);
-      let config = {
-        method: "post",
-        url: "http://localhost:5000/api/cases/",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: dataAxios,
-      };
+      // let dataAxios = JSON.stringify(data);
+      // let config = {
+      //   method: "post",
+      //   url: "http://localhost:5000/api/cases/",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   data: dataAxios,
+      // };
 
-      const response = await axios(config);
+      // const response = await axios(config);
 
       if (file) {
-        const formData = new FormData();
+        function getFormData(_data) {
+          const formData = new FormData();
+          Object.keys(_data).forEach((key) => formData.append(key, _data[key]));
+          return formData;
+        }
+
+        const formData = getFormData(data);
         formData.append("file", file);
 
-        await axios.post("http://localhost:5000/api/cases/image", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+        const response = await axios.post(
+          "http://localhost:5000/api/cases",
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
+        socket.emit("reload:client", response.data, "ADD_CASE");
+
+        dispatch({
+          type: "ADD_CASE",
+          payload: response.data,
         });
-        console.log("image ready");
       }
-
-      socket.emit("reload:client", response.data, "ADD_CASE");
-
-      dispatch({
-        type: "ADD_CASE",
-        payload: response.data,
-      });
     } catch (error) {
       console.log(error);
     }
