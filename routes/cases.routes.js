@@ -1,23 +1,23 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const s3 = require('../aws/s3');
-const config = require('config');
-const multer = require('multer');
+const s3 = require("../aws/s3");
+const config = require("config");
+const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 
-const Cases = require('../models/Case');
+const Cases = require("../models/Case");
 
-const startOfDay = require('date-fns/startOfDay');
-const endOfDay = require('date-fns/endOfDay');
+const startOfDay = require("date-fns/startOfDay");
+const endOfDay = require("date-fns/endOfDay");
 
-const { DLBUCKETNAME, BUCKETNAME } = config.get('AWS');
+const { DLBUCKETNAME, BUCKETNAME } = config.get("AWS");
 
-router.post('/image', upload.single('file'), (req, res) => {
+router.post("/image", upload.single("file"), (req, res) => {
   const file = req.file;
   console.log(file);
   if (file) {
     const uploadParams = {
-      Bucket: config.get('AWS.BUCKETNAME'),
+      Bucket: config.get("AWS.BUCKETNAME"),
       Key: file.originalname,
       Body: file.buffer,
       ContentEncoding: file.encoding,
@@ -30,17 +30,17 @@ router.post('/image', upload.single('file'), (req, res) => {
       else console.log(data);
     });
 
-    res.send('GG');
+    res.send("GG");
   } else {
-    res.send('get good');
+    res.send("get good");
   }
 });
 
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { installment } = req.body;
     if (!installment) {
-      res.status(500).json({ msg: 'installment no valid' });
+      res.status(500).json({ msg: "installment no valid" });
     }
     const newCases = new Cases(req.body);
     const response = await newCases.save();
@@ -51,13 +51,13 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/image/:imageId', (req, res) => {
+router.get("/image/:imageId", (req, res) => {
   try {
-    console.log('executed');
+    console.log("executed");
     const { imageId } = req.params;
     let params = {
-      Bucket: config.get('AWS.BUCKETNAME'),
-      Key: `${imageId}.png`,
+      Bucket: config.get("AWS.BUCKETNAME"),
+      Key: imageId,
     };
 
     console.log(params);
@@ -65,15 +65,15 @@ router.get('/image/:imageId', (req, res) => {
     s3.getObject(params, (err, data) => {
       if (err) {
         res.status(500).send({
-          error: 'Internal Server Error',
+          error: "Internal Server Error",
           errName: err.name,
           errMessage: err.message,
           errDescription: err.description,
         });
       } else {
-        res.writeHead(200, { 'Content-Type': 'image/jpeg' });
-        res.write(data.Body, 'binary');
-        res.end(null, 'binary');
+        res.writeHead(200, { "Content-Type": "image/jpeg" });
+        res.write(data.Body, "binary");
+        res.end(null, "binary");
       }
     });
 
@@ -96,23 +96,23 @@ router.get('/image/:imageId', (req, res) => {
     // res.send(imageId);
   } catch (error) {
     console.log(error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send("Internal Server Error");
   }
 });
 
-router.get('/sockettest', async (req, res) => {
+router.get("/sockettest", async (req, res) => {
   try {
-    const io = req.app.get('socketio');
-    io.emit('test', {
-      msg: 'klk',
+    const io = req.app.get("socketio");
+    io.emit("test", {
+      msg: "klk",
     });
-    res.send('received');
+    res.send("received");
   } catch (error) {
     console.log(error);
   }
 });
 
-router.post('/data', async (req, res) => {
+router.post("/data", async (req, res) => {
   const { startDate, endDate } = req.body;
   const response = await Cases.find({
     createdAt: {
@@ -123,7 +123,7 @@ router.post('/data', async (req, res) => {
   res.status(201).json(response);
 });
 
-router.post('/previousCases', async (req, res) => {
+router.post("/previousCases", async (req, res) => {
   const { status1, status2 } = req.body;
   const response = await Cases.find({
     status: { $in: [status1, status2] },
@@ -134,7 +134,7 @@ router.post('/previousCases', async (req, res) => {
   res.status(201).json(response);
 });
 
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   const response = await Cases.find({
     createdAt: {
       $gte: startOfDay(new Date()),
@@ -144,7 +144,7 @@ router.get('/', async (req, res) => {
   res.status(201).json(response);
 });
 
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   // if (!startDate || !endDate) {
   //   const response = await Cases.find({});
   //   res.status(201).json(response);
@@ -154,7 +154,7 @@ router.get('/', async (req, res) => {
   res.status(201).json(response);
 });
 
-router.get('/:CaseId', async (req, res) => {
+router.get("/:CaseId", async (req, res) => {
   const { CaseId } = req.params;
   const response = await Cases.findById(CaseId);
   res.json(response);
@@ -175,7 +175,7 @@ router.get('/:CaseId', async (req, res) => {
 //   }
 // });
 
-router.put('/:CaseId', async (req, res) => {
+router.put("/:CaseId", async (req, res) => {
   const { CaseId } = req.params;
   const response = await Cases.findByIdAndUpdate(CaseId, req.body, {
     new: true,
@@ -183,11 +183,11 @@ router.put('/:CaseId', async (req, res) => {
   res.json(response);
 });
 
-router.delete('/:CaseId', async (req, res) => {
+router.delete("/:CaseId", async (req, res) => {
   try {
     const { CaseId } = req.params;
     await Cases.findByIdAndDelete(CaseId);
-    res.send('Deleted');
+    res.send("Deleted");
   } catch (error) {
     console.log(error);
   }

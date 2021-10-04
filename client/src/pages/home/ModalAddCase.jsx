@@ -1,56 +1,57 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
-import DatePicker from 'react-datepicker';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
-import { format } from 'date-fns';
-import { useOktaAuth } from '@okta/okta-react';
-import { GlobalContext } from '../../context/GlobalState';
-import axios from 'axios';
+import React, { useState, useEffect, useContext, useCallback } from "react";
+import DatePicker from "react-datepicker";
+import Modal from "react-bootstrap/Modal";
+import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
+import { format } from "date-fns";
+import { useOktaAuth } from "@okta/okta-react";
+import { GlobalContext } from "../../context/GlobalState";
+import axios from "axios";
+import { v4 } from "uuid";
 //import "bootstrap/dist/css/bootstrap.min.css";
-import { useDropzone } from 'react-dropzone';
+import { useDropzone } from "react-dropzone";
 
 const thumb = {
-  display: 'inline-flex',
+  display: "inline-flex",
   borderRadius: 2,
-  border: '1px solid #eaeaea',
+  border: "1px solid #eaeaea",
   marginBottom: 8,
   marginRight: 8,
-  width: '100%',
-  height: 'auto',
-  maxHeight: '600px',
+  width: "100%",
+  height: "auto",
+  maxHeight: "600px",
   padding: 4,
-  boxSizing: 'border-box',
+  boxSizing: "border-box",
 };
 
 const thumbInner = {
-  display: 'flex',
+  display: "flex",
   minWidth: 0,
-  overflow: 'hidden',
+  overflow: "hidden",
 };
 
 const img = {
-  display: 'block',
-  width: 'auto',
-  height: '100%',
+  display: "block",
+  width: "auto",
+  height: "100%",
 };
 
 const ModalAddCase = () => {
-  const [name, setName] = useState('');
-  const [userId, setUserId] = useState('');
-  const [code, setCode] = useState('');
-  const [payments, setPayments] = useState('');
-  const [installment, setInstallment] = useState('');
-  const [amount, setAmount] = useState('');
-  const [status, setStatus] = useState('');
+  const [name, setName] = useState("");
+  const [userId, setUserId] = useState("");
+  const [code, setCode] = useState("");
+  const [payments, setPayments] = useState("");
+  const [installment, setInstallment] = useState("");
+  const [amount, setAmount] = useState("");
+  const [status, setStatus] = useState("");
   const [startDate, setStartDate] = useState(new Date());
   const [verifiedDate, setVerifiedDate] = useState(null);
   const [appliedDate, setAppliedDate] = useState(null);
   const [verified, setVerified] = useState(null);
   const [error, setError] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [file, setFile] = useState();
-  const [fileToSend, setFileToSend] = useState([]);
+  const [fileToSend, setFileToSend] = useState(null);
   const [imageRecivied, setImageRecivied] = useState();
   const [preview, setPreview] = useState([]);
   const [test, setTest] = useState();
@@ -64,6 +65,10 @@ const ModalAddCase = () => {
         })
       )
     );
+    // const newFile = { ...acceptedFiles[0] };
+
+    // console.log(acceptedFiles[0]);
+    // console.log(newFile);
     setFileToSend(acceptedFiles[0]);
     reader.readAsBinaryString(acceptedFiles[0]);
 
@@ -71,13 +76,13 @@ const ModalAddCase = () => {
       setFile(btoa(reader.result));
     };
     reader.onerror = function () {
-      console.log('there are some problems');
+      console.log("there are some problems");
     };
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: 'image/jpeg, image/png',
+    accept: "image/jpeg, image/png",
   });
 
   const thumbs = preview.map((file) => (
@@ -121,7 +126,7 @@ const ModalAddCase = () => {
       const minutes = time.slice(3, 5);
       const date = new Date(1993, 10, 1, hours, minutes);
 
-      if (role === 'overdue') {
+      if (role === "overdue") {
         setName(name);
         setPayments(number_payments);
         setInstallment(installment.toString());
@@ -143,7 +148,7 @@ const ModalAddCase = () => {
     e.preventDefault();
 
     ///validation
-    if (role && role === 'contable' && code === '') {
+    if (role && role === "contable" && code === "") {
       setError(true);
       setTimeout(() => {
         setError(false);
@@ -151,17 +156,17 @@ const ModalAddCase = () => {
       return;
     }
 
-    if (role === 'overdue') {
+    if (role === "overdue") {
       //no puede enviar campos vacios
       if (
-        name?.toString().trim() === '' ||
-        userId?.toString().trim() === '' ||
-        payments?.toString().trim() === '' ||
-        installment?.toString().trim() === '' ||
-        amount?.toString().trim() === ''
+        name?.toString().trim() === "" ||
+        userId?.toString().trim() === "" ||
+        payments?.toString().trim() === "" ||
+        installment?.toString().trim() === "" ||
+        amount?.toString().trim() === ""
       ) {
         setError(true);
-        setMessage('No puede enviar campos vacios');
+        setMessage("No puede enviar campos vacios");
         setTimeout(() => {
           setError(false);
         }, [2000]);
@@ -169,9 +174,9 @@ const ModalAddCase = () => {
       }
 
       //verificar si se envia imagen
-      if (!fileToSend.length === 0 && !imageRecivied) {
+      if (!fileToSend && !imageRecivied) {
         setError(true);
-        setMessage('Anexe una imagen por favor');
+        setMessage("Anexe una imagen por favor");
         setTimeout(() => {
           setError(false);
         }, [2000]);
@@ -179,10 +184,10 @@ const ModalAddCase = () => {
       }
 
       //verificar que el numero de pagos sea igual a cantidad de cuotas
-      if (payments != installment?.split(',')?.length) {
+      if (payments != installment?.split(",")?.length) {
         setError(true);
         setMessage(
-          'El numero en payments debe ser igual a la cantidad de digitos en installment'
+          "El numero en payments debe ser igual a la cantidad de digitos en installment"
         );
         setTimeout(() => {
           setError(false);
@@ -192,7 +197,7 @@ const ModalAddCase = () => {
       //separar por comas
     }
 
-    if (TempCase.length && TempCase[0]?._id && role && role === 'overdue') {
+    if (TempCase.length && TempCase[0]?._id && role && role === "overdue") {
       updateCase({
         ...TempCase[0],
         name: name,
@@ -200,7 +205,7 @@ const ModalAddCase = () => {
         amount: amount,
         number_payments: payments,
         code: code,
-        installment: installment.split(','),
+        installment: installment.split(","),
         time: format(startDate, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
           .toString()
           .slice(11, 16),
@@ -209,7 +214,7 @@ const ModalAddCase = () => {
       TempCase.length &&
       TempCase[0]?._id &&
       role &&
-      role === 'contable'
+      role === "contable"
     ) {
       updateCase(
         !verifiedDate
@@ -229,7 +234,7 @@ const ModalAddCase = () => {
       TempCase.length &&
       TempCase[0]?._id &&
       role &&
-      role === 'admin'
+      role === "admin"
     ) {
       updateCase(
         !appliedDate
@@ -253,7 +258,7 @@ const ModalAddCase = () => {
           amount: amount,
           number_payments: payments,
           code: code,
-          installment: installment.split(','),
+          installment: installment.split(","),
           time: format(startDate, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
             .toString()
             .slice(11, 16),
@@ -263,7 +268,7 @@ const ModalAddCase = () => {
       );
     }
 
-    console.log('enviado');
+    console.log("enviado");
     openModal(false);
     deleteTempCase();
   };
@@ -284,13 +289,16 @@ const ModalAddCase = () => {
   };
 
   useEffect(() => {
-    if (imageRecivied !== '') {
+    if (imageRecivied !== "") {
       async function test() {
         const response = await axios.get(
           `http://localhost:5000/api/cases/image/${imageRecivied}`
         );
-        console.log(response.data);
-        setTest(response.data);
+
+        if (response) {
+          setTest(`http://localhost:5000/api/cases/image/${imageRecivied}`);
+          setFileToSend({});
+        }
       }
       test();
     }
@@ -313,17 +321,17 @@ const ModalAddCase = () => {
       <Form onSubmit={onSubmit}>
         <Modal.Header closeButton>
           <Modal.Title id="contained-modal-title-vcenter">
-            {role === 'overdue'
+            {role === "overdue"
               ? TempCase?.length && TempCase[0]?._id
-                ? 'Edit Case'
-                : 'Add Case'
-              : role === 'contable'
-              ? 'Add Code and Status'
-              : 'Add Status and Check'}
+                ? "Edit Case"
+                : "Add Case"
+              : role === "contable"
+              ? "Add Code and Status"
+              : "Add Status and Check"}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {role === 'overdue' && (
+          {role === "overdue" && (
             <>
               {error === true && (
                 <p className="alert alert-danger">{message}</p>
@@ -377,7 +385,7 @@ const ModalAddCase = () => {
                 />
               </Form.Group>
               <Form.Group className="d-flex flex-column mb-3">
-                <Form.Label style={{ display: 'block' }}>Time</Form.Label>
+                <Form.Label style={{ display: "block" }}>Time</Form.Label>
 
                 <DatePicker
                   className="form-control"
@@ -401,7 +409,7 @@ const ModalAddCase = () => {
               </Form.Group>
             </>
           )}
-          {role === 'contable' && (
+          {role === "contable" && (
             <Form.Group className="mb-3">
               <Form.Label>Code</Form.Label>
               <Form.Control
@@ -417,32 +425,32 @@ const ModalAddCase = () => {
               )}
             </Form.Group>
           )}
-          {role === 'contable' || role === 'admin' ? (
+          {role === "contable" || role === "admin" ? (
             <Form.Group className="mb-3">
               <Form.Label>Status</Form.Label>
               <select
                 className="form-control"
                 onChange={(event) => setStatus(event.target.value)}
               >
-                {' '}
-                {role !== 'admin' && (
+                {" "}
+                {role !== "admin" && (
                   <option
                     value="pending"
-                    selected={status === 'pending' ? true : null}
+                    selected={status === "pending" ? true : null}
                   >
                     pending
                   </option>
                 )}
                 <option
                   value="confirmed"
-                  selected={status === 'confirmed' ? true : null}
+                  selected={status === "confirmed" ? true : null}
                 >
                   confirmed
                 </option>
-                {role === 'admin' && (
+                {role === "admin" && (
                   <option
                     value="applied"
-                    selected={status === 'applied' ? true : null}
+                    selected={status === "applied" ? true : null}
                   >
                     applied
                   </option>
@@ -450,7 +458,7 @@ const ModalAddCase = () => {
               </select>
             </Form.Group>
           ) : null}
-          {role === 'admin' && (
+          {role === "admin" && (
             <Form.Group className="mb-3">
               <Form.Label>Verified</Form.Label>
               <Form.Check
@@ -465,12 +473,12 @@ const ModalAddCase = () => {
           {!fileToSend ? (
             <div
               style={{
-                height: '400px',
-                border: '2px dashed #b5b5b5',
-                fontSize: '2.8rem',
-                textAlign: 'center',
-                display: 'flex',
-                alignItems: 'center',
+                height: "400px",
+                border: "2px dashed #b5b5b5",
+                fontSize: "2.8rem",
+                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
               }}
               {...getRootProps()}
             >
@@ -482,9 +490,31 @@ const ModalAddCase = () => {
               )}
             </div>
           ) : (
-            thumbs
+            <>
+              {!imageRecivied && thumbs}
+              {imageRecivied && (
+                <img
+                  src={test}
+                  className="d-block"
+                  style={{ width: "400px", height: "400px" }}
+                />
+              )}
+
+              <div
+                className="btn btn-danger mt-2"
+                onClick={() => {
+                  setPreview([]);
+                  setFileToSend(null);
+                  setImageRecivied(false);
+                }}
+              >
+                delete
+              </div>
+            </>
           )}
-          {imageRecivied && <img src={test} width="500" height="600" />}
+          {imageRecivied && role !== "overdue" && (
+            <img src={test} width="500" height="600" />
+          )}
           {/* <div>
             <input type="file" name="file" onChange={fileSelected} />
           </div> */}
